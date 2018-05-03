@@ -266,6 +266,48 @@ func (arguments Arguments) Pack(args ...interface{}) ([]byte, error) {
 	return ret, nil
 }
 
+func toUpper(ch rune) rune {
+	if ch >= 'a' && ch <= 'z' {
+		return ch - 32
+	}
+	return ch
+}
+
+func isDelimiter(ch rune) bool {
+	return ch == '_'
+}
+
+// UpperCamelCase converts a string into camel case starting with a upper case letter.
+func upperCamelCase(s string) string {
+	return camelCase(s, true)
+}
+
+func toLower(ch rune) rune {
+	if ch >= 'A' && ch <= 'Z' {
+		return ch + 32
+	}
+	return ch
+}
+
+func camelCase(s string, upper bool) string {
+	s = strings.TrimSpace(s)
+	buffer := make([]rune, 0, len(s))
+
+	var prev rune
+	for _, curr := range s {
+		if !isDelimiter(curr) {
+			if isDelimiter(prev) || (upper && prev == 0) {
+				buffer = append(buffer, toUpper(curr))
+			} else {
+				buffer = append(buffer, toLower(curr))
+			}
+		}
+		prev = curr
+	}
+
+	return string(buffer)
+}
+
 // capitalise makes the first character of a string upper case, also removing any
 // prefixing underscores from the variable names.
 func capitalise(input string) string {
@@ -280,7 +322,7 @@ func capitalise(input string) string {
 
 //unpackStruct extracts each argument into its corresponding struct field
 func unpackStruct(value, reflectValue reflect.Value, arg Argument) error {
-	name := capitalise(arg.Name)
+	name := upperCamelCase(arg.Name)
 	typ := value.Type()
 	for j := 0; j < typ.NumField(); j++ {
 		// TODO read tags: `abi:"fieldName"`
